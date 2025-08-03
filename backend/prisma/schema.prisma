@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String         @unique
+  telefone      String?
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  agendamentos  Agendamentos[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model Barbeiros {
+  id        String             @id @default(uuid())
+  nome      String
+  telefones String
+  descricao String
+  imagemUrl String
+  createdAt DateTime           @default(now())
+  updateAt  DateTime           @updatedAt
+  ativo     Boolean            @default(true)
+  servicos  ServicosBarbeiro[]
+}
+
+model ServicosBarbeiro {
+  id    String  @id @default(uuid())
+  ativo Boolean @default(true)
+
+  // Chaves estrangeiras
+  barbeirosId String
+  servicoId   String
+
+  // Relacionamentos
+  barbeiro Barbeiros @relation(fields: [barbeirosId], references: [id])
+  servico  Servico   @relation(fields: [servicoId], references: [id])
+
+  agendamentos Agendamentos[]
+
+  @@unique([barbeirosId, servicoId])
+}
+
+model Agendamentos {
+  id        String           @id @default(uuid())
+  usuarioId String
+  servicoId String
+  data      DateTime
+  createdAt DateTime         @default(now())
+  updateAt  DateTime         @updatedAt
+  servico   ServicosBarbeiro @relation(fields: [servicoId], references: [id])
+  usuario   User             @relation(fields: [usuarioId], references: [id])
+}
+
+model Servico {
+  id        String             @id @default(uuid())
+  nome      String
+  descricao String
+  preco     Decimal            @db.Decimal(10, 2)
+  imagemUrl String
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  barbeiros ServicosBarbeiro[] // ← ligação com a tabela de junção
+}
