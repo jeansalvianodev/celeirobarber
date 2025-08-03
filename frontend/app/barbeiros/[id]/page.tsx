@@ -32,20 +32,23 @@ interface Barbeiro {
 }
 
 interface BarbeiroPageProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }>
 }
 
 export default async function BarbeiroPage({ params }: BarbeiroPageProps) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/barbeiros/${params.id}`,
-    { next: { revalidate: 60 } }
-  )
+  const { id } = await params
+
+  const decodedId = decodeURIComponent(id ?? "")
+
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/barbeiros/${decodedId}`, {
+    next: { revalidate: 60 },
+  })
 
   if (!res.ok) return notFound()
 
-  const barbeiro: Barbeiro = await res.json()
+  const barbeiro: Barbeiro | null = await res.json()
+
+  if (!barbeiro) return notFound()
 
   return (
     <div>
